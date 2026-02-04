@@ -26,8 +26,13 @@ pub fn stdin() -> Stdin {
     {
         let (tx, rx) = tokio::sync::mpsc::channel(32);
 
-        // This panics if called outside of a Tokio Runtime!
-        tokio::task::spawn_blocking(move || {
+        // FIX: Use std::thread::spawn instead of tokio::task::spawn_blocking.
+        // spawn_blocking tasks are managed by the runtime, which waits for them
+        // to finish on shutdown. Since this thread blocks forever on read(),
+        // it prevents the app from exiting.
+        // std::thread::spawn creates a detached thread that dies immediately 
+        // when the main process exits.
+        std::thread::spawn(move || {
             let mut input = std::io::stdin();
             let mut buf = [0u8; 1024];
             use std::io::Read;
@@ -147,11 +152,10 @@ mod tests {
         assert_eq!(n, 0);
     }
 
-    // On native/WASI, we need a runtime because stdin() calls spawn_blocking on native.
-    #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
-    #[tokio::test]
-    async fn test_stdin_creation() {
-        // Should not panic on any platform
+    #[test]
+    fn test_stdin_creation() {
+        // This will now pass on Native even without a runtime!
+        // (std::thread::spawn doesn't require a runtime context like spawn_blocking did)
         let _stdin = stdin();
     }
 }
