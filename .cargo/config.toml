@@ -1,3 +1,4 @@
+# Cargo configuration for cross-platform builds
 [target.wasm32-wasip2]
 runner = "wasmtime run -S inherit-network --env TMPDIR=/tmp --dir /tmp::/tmp"
 
@@ -9,3 +10,20 @@ rustflags = [
     "-C", "target-feature=+bulk-memory,+mutable-globals",
     "--cfg", "wasi_ext"
 ]
+
+# Build settings
+[build]
+# Uncomment to set default target
+# target = "wasm32-unknown-unknown"
+
+# Profile optimizations
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+
+# Fast compile for development
+[profile.dev]
+opt-level = 0
+debug = true

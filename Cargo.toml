@@ -7,26 +7,30 @@ edition = "2024"
 name = "aloeplatform"
 path = "src/lib.rs"
 
+[[bin]]
+name = "aloeplatform-example"
+path = "src/main.rs"
+
+[[test]]
+name = "integration-tests"
+path = "tests/integration.rs"
+
+[[test]]
+name = "io-integration-tests"
+path = "tests/io_integration.rs"
+
 [dependencies]
-# Core async runtime
-tokio = { version = "1", default-features = false }
-async-trait = "0.1"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
 log = "0.4"
-env_logger = "0.11"
-# rand_core = "0.6"
-# rand = "0.8"
-# hex = "0.4"
-# base64 = "0.22"
+futures = "0.3"
 
 # # Native only
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 tokio = { version = "1", features = ["full"] }
+env_logger = "0.11"
 
 # # --- WASM Common (Both CLI and Browser) ---
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-# tokio = { version = "1", features = ["sync", "macros", "io-util", "rt", "time"] }
+tokio = { version = "1", features = ["sync", "macros", "io-util", "rt", "time"] }
 futures = "0.3"
 
 # # WASI P2 only
@@ -39,18 +43,13 @@ wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
 console_error_panic_hook = "0.1"
 console_log = "1"
-# web-sys = { version = "0.3", features = [
-#     "Window", 
-#     "Document", 
-#     "Element",
-#     "HtmlAnchorElement",
-#     "Storage", 
-#     "Blob", 
-#     "Url", 
-#     "File",
-#     "Location", 
-#     "UrlSearchParams"
-# ] }
 gloo-timers = { version = "0.3", features = ["futures"] }
-# js-sys = "0.3"
 instant = { version = "0.1", features = ["wasm-bindgen"] }
+
+[dev-dependencies]
+# For testing async code
+tokio-test = "0.4"
+
+# Browser test dependencies
+[target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dev-dependencies]
+wasm-bindgen-test = "0.3"
