@@ -1,37 +1,32 @@
 //! Platform-specific IO utilities.
 
+use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
 use std::pin::Pin;
 use std::task::{Context, Poll};
-use tokio::io::{AsyncRead, ReadBuf};
+use std::io::Result;
 
-// --- Stdin ---
+// --- Public Interface ---
 
-/// A handle to the standard input stream.
-pub struct Stdin {
-    // Native: Receiver from the blocking thread
-    #[cfg(not(target_arch = "wasm32"))]
-    receiver: tokio::sync::mpsc::Receiver<std::io::Result<Vec<u8>>>,
-    #[cfg(not(target_arch = "wasm32"))]
-    buffer: Vec<u8>,
+pub use impl_platform::{stdin, stdout, Stdin, Stdout};
 
-    // WASI: Direct handle to std::io::Stdin
-    #[cfg(all(target_arch = "wasm32", target_env = "p2"))]
-    inner: std::io::Stdin,
-}
+// --- Native Implementation ---
+#[cfg(not(target_arch = "wasm32"))]
+mod impl_platform {
+    use super::*;
 
-/// Constructs a new handle to the standard input of the current process.
-pub fn stdin() -> Stdin {
-    // --- NATIVE IMPLEMENTATION ---
-    #[cfg(not(target_arch = "wasm32"))]
-    {
+    pub struct Stdin {
+        receiver: tokio::sync::mpsc::Receiver<Result<Vec<u8>>>,
+        buffer: Vec<u8>,
+    }
+
+    pub struct Stdout {
+        inner: tokio::io::Stdout,
+    }
+
+    pub fn stdin() -> Stdin {
         let (tx, rx) = tokio::sync::mpsc::channel(32);
 
-        // FIX: Use std::thread::spawn instead of tokio::task::spawn_blocking.
-        // spawn_blocking tasks are managed by the runtime, which waits for them
-        // to finish on shutdown. Since this thread blocks forever on read(),
-        // it prevents the app from exiting.
-        // std::thread::spawn creates a detached thread that dies immediately 
-        // when the main process exits.
+        // use std::thread::spawn to avoid blocking the runtime on shutdown
         std::thread::spawn(move || {
             let mut input = std::io::stdin();
             let mut buf = [0u8; 1024];
@@ -39,7 +34,7 @@ pub fn stdin() -> Stdin {
 
             loop {
                 match input.read(&mut buf) {
-                    Ok(0) => break, // EOF
+                    Ok(0) => break,
                     Ok(n) => {
                         if tx.blocking_send(Ok(buf[..n].to_vec())).is_err() {
                             break;
@@ -59,87 +54,162 @@ pub fn stdin() -> Stdin {
         }
     }
 
-    // --- WASI IMPLEMENTATION ---
-    #[cfg(all(target_arch = "wasm32", target_env = "p2"))]
-    {
+    pub fn stdout() -> Stdout {
+        Stdout {
+            inner: tokio::io::stdout(),
+        }
+    }
+
+    impl AsyncRead for Stdin {
+        fn poll_read(
+            mut self: Pin<&mut Self>,
+            cx: &mut Context<'_>,
+            buf: &mut ReadBuf<'_>,
+        ) -> Poll<Result<()>> {
+            loop {
+                if !self.buffer.is_empty() {
+                    let len = std::cmp::min(buf.remaining(), self.buffer.len());
+                    buf.put_slice(&self.buffer[..len]);
+                    self.buffer.drain(..len);
+                    return Poll::Ready(Ok(()));
+                }
+
+                match self.receiver.poll_recv(cx) {
+                    Poll::Ready(Some(Ok(chunk))) => {
+                        self.buffer = chunk;
+                        continue;
+                    }
+                    Poll::Ready(Some(Err(e))) => return Poll::Ready(Err(e)),
+                    Poll::Ready(None) => return Poll::Ready(Ok(())),
+                    Poll::Pending => return Poll::Pending,
+                }
+            }
+        }
+    }
+
+    impl AsyncWrite for Stdout {
+        fn poll_write(
+            mut self: Pin<&mut Self>,
+            cx: &mut Context<'_>,
+            buf: &[u8],
+        ) -> Poll<Result<usize>> {
+            Pin::new(&mut self.inner).poll_write(cx, buf)
+        }
+
+        fn poll_flush(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<()>> {
+            Pin::new(&mut self.inner).poll_flush(cx)
+        }
+
+        fn poll_shutdown(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<()>> {
+            Pin::new(&mut self.inner).poll_shutdown(cx)
+        }
+    }
+}
+
+// --- WASI Implementation ---
+#[cfg(all(target_arch = "wasm32", target_env = "p2"))]
+mod impl_platform {
+    use super::*;
+    use std::io::{Read, Write};
+
+    pub struct Stdin {
+        inner: std::io::Stdin,
+    }
+
+    pub struct Stdout {
+        inner: std::io::Stdout,
+    }
+
+    pub fn stdin() -> Stdin {
         Stdin {
             inner: std::io::stdin(),
         }
     }
 
-    // --- BROWSER IMPLEMENTATION ---
-    #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
-    {
-        Stdin {}
+    pub fn stdout() -> Stdout {
+        Stdout {
+            inner: std::io::stdout(),
+        }
     }
-}
 
-// --- Native Trait Impl ---
-#[cfg(not(target_arch = "wasm32"))]
-impl AsyncRead for Stdin {
-    fn poll_read(
-        mut self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-        buf: &mut ReadBuf<'_>,
-    ) -> Poll<std::io::Result<()>> {
-        loop {
-            if !self.buffer.is_empty() {
-                let len = std::cmp::min(buf.remaining(), self.buffer.len());
-                buf.put_slice(&self.buffer[..len]);
-                self.buffer.drain(..len);
-                return Poll::Ready(Ok(()));
-            }
-
-            match self.receiver.poll_recv(cx) {
-                Poll::Ready(Some(Ok(chunk))) => {
-                    self.buffer = chunk;
-                    continue;
+    impl AsyncRead for Stdin {
+        fn poll_read(
+            mut self: Pin<&mut Self>,
+            _cx: &mut Context<'_>,
+            buf: &mut ReadBuf<'_>,
+        ) -> Poll<Result<()>> {
+            // WASI P2: Synchronous blocking read.
+            // We rely on the application to yield before calling this!
+            let slice = buf.initialize_unfilled();
+            match self.inner.read(slice) {
+                Ok(n) => {
+                    buf.advance(n);
+                    Poll::Ready(Ok(()))
                 }
-                Poll::Ready(Some(Err(e))) => return Poll::Ready(Err(e)),
-                Poll::Ready(None) => return Poll::Ready(Ok(())), // EOF
-                Poll::Pending => return Poll::Pending,
+                Err(e) => Poll::Ready(Err(e)),
             }
+        }
+    }
+
+    impl AsyncWrite for Stdout {
+        fn poll_write(
+            self: Pin<&mut Self>,
+            _cx: &mut Context<'_>,
+            buf: &[u8],
+        ) -> Poll<Result<usize>> {
+            match std::io::stdout().write(buf) {
+                Ok(n) => Poll::Ready(Ok(n)),
+                Err(e) => Poll::Ready(Err(e)),
+            }
+        }
+
+        fn poll_flush(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Result<()>> {
+            match std::io::stdout().flush() {
+                Ok(_) => Poll::Ready(Ok(())),
+                Err(e) => Poll::Ready(Err(e)),
+            }
+        }
+
+        fn poll_shutdown(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Result<()>> {
+            Poll::Ready(Ok(()))
         }
     }
 }
 
-// --- WASI Trait Impl ---
-#[cfg(all(target_arch = "wasm32", target_env = "p2"))]
-impl AsyncRead for Stdin {
-    fn poll_read(
-        mut self: Pin<&mut Self>,
-        _cx: &mut Context<'_>,
-        buf: &mut ReadBuf<'_>,
-    ) -> Poll<std::io::Result<()>> {
-        use std::io::Read;
-        // NOTE: On WASI P2 (single-threaded), this read is synchronous.
-        // It will block the async executor until data is available.
-        let slice = buf.initialize_unfilled();
-        match self.inner.read(slice) {
-            Ok(n) => {
-                buf.advance(n);
-                Poll::Ready(Ok(()))
-            }
-            Err(e) => Poll::Ready(Err(e)),
-        }
-    }
-}
-
-// --- Browser Trait Impl ---
+// --- Browser Implementation (Stubs) ---
 #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
-impl AsyncRead for Stdin {
-    fn poll_read(
-        self: Pin<&mut Self>,
-        _cx: &mut Context<'_>,
-        _buf: &mut ReadBuf<'_>,
-    ) -> Poll<std::io::Result<()>> {
-        Poll::Ready(Ok(())) 
+mod impl_platform {
+    use super::*;
+
+    pub struct Stdin {}
+    pub struct Stdout {}
+
+    pub fn stdin() -> Stdin { Stdin {} }
+    pub fn stdout() -> Stdout { Stdout {} }
+
+    impl AsyncRead for Stdin {
+        fn poll_read(self: Pin<&mut Self>, _cx: &mut Context<'_>, _buf: &mut ReadBuf<'_>) -> Poll<Result<()>> {
+            Poll::Ready(Ok(()))
+        }
+    }
+
+    impl AsyncWrite for Stdout {
+        fn poll_write(self: Pin<&mut Self>, _cx: &mut Context<'_>, buf: &[u8]) -> Poll<Result<usize>> {
+            Poll::Ready(Ok(buf.len()))
+        }
+        fn poll_flush(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Result<()>> {
+            Poll::Ready(Ok(()))
+        }
+        fn poll_shutdown(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Result<()>> {
+            Poll::Ready(Ok(()))
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    
     #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
     use tokio::io::AsyncReadExt;
 
@@ -153,9 +223,8 @@ mod tests {
     }
 
     #[test]
-    fn test_stdin_creation() {
-        // This will now pass on Native even without a runtime!
-        // (std::thread::spawn doesn't require a runtime context like spawn_blocking did)
+    fn test_io_creation() {
         let _stdin = stdin();
+        let _stdout = stdout();
     }
 }
