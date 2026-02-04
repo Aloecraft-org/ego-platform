@@ -11,8 +11,12 @@ rustflags = [
     "--cfg", "wasi_ext"
 ]
 
+[development]
+target = "wasm32-wasip2"
+
 # Build settings
 [build]
+target = "wasm32-wasip2"
 # Uncomment to set default target
 # target = "wasm32-unknown-unknown"
 
@@ -27,3 +31,4 @@ strip = true
 [profile.dev]
 opt-level = 0
 debug = true
+target = "wasm32-wasip2"

@@ -36,6 +36,7 @@ futures = "0.3"
 # # WASI P2 only
 [target.'cfg(all(target_arch = "wasm32", target_env = "p2"))'.dependencies]
 tokio = { version = "1", features = ["sync", "macros", "io-util", "rt", "time"] }
+wasi = "0.14"
 
 # # Browser only
 [target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dependencies]
