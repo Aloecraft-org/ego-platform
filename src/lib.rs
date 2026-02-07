@@ -23,6 +23,7 @@ pub mod spawn;
 pub mod sync;
 pub mod time;
 pub mod io;
+pub mod fs;
 
 // Re-export commonly used items
 pub use spawn::spawn;

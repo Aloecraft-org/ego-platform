@@ -1,6 +1,13 @@
 # Cargo configuration for cross-platform builds
 [target.wasm32-wasip2]
-runner = "wasmtime run -S inherit-network --env TMPDIR=/tmp --dir /tmp::/tmp"
+runner = [
+    "wasmtime", "run",
+    "-S", "inherit-network",
+    "--dir", ".::.",           # ADD THIS - maps current directory
+    "--dir", "/tmp::/tmp",
+    "--env", "TMPDIR=/tmp",
+    "--"
+]
 
 [target.wasm32-unknown-unknown]
 runner = "trunk serve"
