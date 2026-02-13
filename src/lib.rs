@@ -25,24 +25,18 @@ pub mod time;
 pub mod io;
 pub mod fs;
 
-// Re-export commonly used items
-pub use spawn::spawn;
-pub use sync::broadcast;
-pub use time::{sleep, Interval, SystemTime, UNIX_EPOCH};
+pub use spawn::{spawn, TaskHandle};
+pub use time::{sleep, Interval, SystemTime, UNIX_EPOCH, Instant};
 pub use io::stdin;
+pub use sync::broadcast;
 
-/// Platform identifier
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Platform {
-    /// Native (non-WASM) platform
     Native,
-    /// WASI (WebAssembly System Interface)
     Wasi,
-    /// Browser (WebAssembly)
     Browser,
 }
 
-/// Detect the current platform at runtime
 pub fn detect() -> Platform {
     #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
     return Platform::Browser;
@@ -54,12 +48,13 @@ pub fn detect() -> Platform {
     return Platform::Native;
 }
 
-/// Initialize the platform (sets up logging)
-///
-/// Should be called once at the start of your application.
 pub fn init() {
+    println!("[aloeplatform lib.rs] init");
     logging::init();
 }
+
+// Backward compatibility alias
+pub use time::sleep as wait_for_timeout;
 
 #[cfg(test)]
 mod tests {
