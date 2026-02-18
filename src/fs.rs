@@ -220,6 +220,27 @@ pub fn read_dir<P: AsRef<Path>>(path: P) -> io::Result<std::fs::ReadDir> {
     std::fs::read_dir(path)
 }
 
+/// Returns the filenames (not full paths) of direct children in a directory.
+/// Returns an empty Vec if the directory does not exist or cannot be read.
+/// Available on all targets.
+pub fn read_dir_names<P: AsRef<Path>>(path: P) -> Vec<String> {
+    #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
+    {
+        browser_fs::read_dir(path).unwrap_or_default()
+    }
+
+    #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
+    {
+        match std::fs::read_dir(path) {
+            Ok(iter) => iter
+                .filter_map(|e| e.ok())
+                .filter_map(|e| e.file_name().into_string().ok())
+                .collect(),
+            Err(_) => Vec::new(),
+        }
+    }
+}
+
 // Re-export platform-specific types
 #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
 pub use browser_fs::{BrowserMetadata as Metadata, read_dir};

@@ -48,6 +48,8 @@ pub fn detect() -> Platform {
     return Platform::Native;
 }
 
+
+pub use logging::register_output_hook;
 pub fn init() {
     println!("[aloeplatform lib.rs] init");
     logging::init();

@@ -24,15 +24,19 @@ log = "0.4"
 futures = "0.3"
 base64 = "0.22"
 
+
 # # Native only
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 tokio = { version = "1", features = ["full"] }
-env_logger = "0.11"
 
 # # --- WASM Common (Both CLI and Browser) ---
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 tokio = { version = "1", features = ["sync", "macros", "io-util", "rt", "time"] }
 futures = "0.3"
+
+# # --- Not Browser ----
+[target.'cfg(not(all(target_arch = "wasm32", target_os = "unknown")))'.dependencies]
+env_logger = "0.11" # env_logger picks up env vars so long as native, or wasmtime
 
 # # WASI P2 only
 [target.'cfg(all(target_arch = "wasm32", target_env = "p2"))'.dependencies]
@@ -45,6 +49,7 @@ wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
 console_error_panic_hook = "0.1"
 console_log = "1"
+wasm-logger = "0.2.0"
 gloo-timers = { version = "0.3", features = ["futures"] }
 web-time = "1.1"
 instant = { version = "0.1", features = ["wasm-bindgen"] }
