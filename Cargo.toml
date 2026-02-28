@@ -54,10 +54,14 @@ gloo-timers = { version = "0.3", features = ["futures"] }
 web-time = "1.1"
 instant = { version = "0.1", features = ["wasm-bindgen"] }
 web-sys = { version = "0.3", features = ["Window", "Storage"]}
+js-sys = "0.3"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 
 [dev-dependencies]
 # For testing async code
 tokio-test = "0.4"
+tokio = { version = "1", features = ["sync", "macros", "io-util", "rt", "time"] }
 
 # Browser test dependencies
 [target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dev-dependencies]

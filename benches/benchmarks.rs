@@ -2,12 +2,12 @@
 //
 // Run with: cargo bench
 
-#![cfg(not(target_arch = "wasm32"))]
+mod common;
+use common::{test, async_test};
+use aloeplatform::{sleep, spawn, Interval, Instant};
+use std::time::Duration;
 
-use aloeplatform::{sleep, spawn, Interval};
-use std::time::{Duration, Instant};
-
-#[tokio::test]
+#[async_test]
 async fn bench_sleep_accuracy() {
     let durations = vec![
         Duration::from_millis(1),
@@ -32,7 +32,7 @@ async fn bench_sleep_accuracy() {
     }
 }
 
-#[tokio::test]
+#[async_test]
 async fn bench_spawn_throughput() {
     use std::sync::Arc;
     use std::sync::atomic::{AtomicUsize, Ordering};
@@ -66,7 +66,7 @@ async fn bench_spawn_throughput() {
     assert_eq!(counter.load(Ordering::Relaxed), num_tasks);
 }
 
-#[tokio::test]
+#[async_test]
 async fn bench_interval_accuracy() {
     let interval_duration = Duration::from_millis(10);
     let mut interval = Interval::new(interval_duration);
@@ -97,7 +97,7 @@ async fn bench_interval_accuracy() {
     assert!(elapsed < expected + Duration::from_millis(50));
 }
 
-#[tokio::test]
+#[async_test]
 async fn bench_broadcast_latency() {
     use aloeplatform::broadcast;
 
