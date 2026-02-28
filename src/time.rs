@@ -199,8 +199,6 @@ impl Interval {
     }
 }
 
-
-
 // --- Error Type ---
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -236,12 +234,12 @@ where
 
     #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
     {
-        use futures::future::{select, Either};
+        use futures::future::{Either, select};
         use gloo_timers::future::TimeoutFuture;
-        
+
         // 1. Create the sleep future (The "Bomb")
         let delay = TimeoutFuture::new(duration.as_millis() as u32);
-        
+
         // 2. Pin them both (Select requires pinning)
         futures::pin_mut!(future);
         futures::pin_mut!(delay);

@@ -14,4 +14,4 @@ pub use wasm_bindgen_test as async_test;
 pub use wasm_bindgen_test as test;
 
 #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
-pub use test as test;
+pub use test;

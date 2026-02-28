@@ -1,9 +1,9 @@
 mod common;
-use common::{test, async_test};
+use common::{async_test, test};
 
 use aloeplatform::time::*;
+use aloeplatform::time::{Instant, Interval, SystemTime, UNIX_EPOCH, sleep};
 use std::time::Duration;
-use aloeplatform::time::{sleep, Interval, SystemTime, UNIX_EPOCH, Instant};
 
 #[async_test]
 async fn test_sleep() {
@@ -12,7 +12,6 @@ async fn test_sleep() {
     let elapsed = start.elapsed();
     assert!(elapsed >= Duration::from_millis(90));
 }
-
 
 #[async_test]
 async fn test_interval() {

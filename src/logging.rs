@@ -81,7 +81,7 @@ impl log::Log for SimpleLogger {
                 return;
             }
         }
-        
+
         // 5. Ultimate Fallback (if backend missing)
         #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
         {
@@ -120,27 +120,29 @@ pub fn init() {
         // Note: The struct is named `WebConsoleLogger` in newer versions or exposed differently.
         // If manual instantiation is tricky, we can implement a trivial wrapper that calls web_sys::console.
         // But let's try the suggestion from the compiler first if available, otherwise fallback.
-        
+
         struct WebLogger;
         impl log::Log for WebLogger {
-            fn enabled(&self, _metadata: &log::Metadata) -> bool { true }
+            fn enabled(&self, _metadata: &log::Metadata) -> bool {
+                true
+            }
             fn log(&self, record: &log::Record) {
-                 // Map Rust log levels to console methods
-                 use wasm_bindgen::JsValue;
-                 let msg = format!("{}", record.args());
-                 let js_msg = JsValue::from_str(&msg);
-                 
-                 match record.level() {
-                     log::Level::Error => web_sys::console::error_1(&js_msg),
-                     log::Level::Warn => web_sys::console::warn_1(&js_msg),
-                     log::Level::Info => web_sys::console::info_1(&js_msg),
-                     log::Level::Debug => web_sys::console::debug_1(&js_msg),
-                     log::Level::Trace => web_sys::console::trace_1(&js_msg),
-                 }
+                // Map Rust log levels to console methods
+                use wasm_bindgen::JsValue;
+                let msg = format!("{}", record.args());
+                let js_msg = JsValue::from_str(&msg);
+
+                match record.level() {
+                    log::Level::Error => web_sys::console::error_1(&js_msg),
+                    log::Level::Warn => web_sys::console::warn_1(&js_msg),
+                    log::Level::Info => web_sys::console::info_1(&js_msg),
+                    log::Level::Debug => web_sys::console::debug_1(&js_msg),
+                    log::Level::Trace => web_sys::console::trace_1(&js_msg),
+                }
             }
             fn flush(&self) {}
         }
-        
+
         let logger = WebLogger;
         max_level = log::LevelFilter::Debug; // Let browser filter
         if let Ok(mut guard) = BACKEND_LOGGER.write() {
@@ -156,7 +158,7 @@ pub fn init() {
         // Default to INFO if RUST_LOG is not set
         let env = env_logger::Env::default().default_filter_or("info");
         let logger = env_logger::Builder::from_env(env).build();
-        
+
         max_level = logger.filter();
         if let Ok(mut guard) = BACKEND_LOGGER.write() {
             *guard = Some(Box::new(logger));

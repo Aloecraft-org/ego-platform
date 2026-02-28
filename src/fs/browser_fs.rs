@@ -54,11 +54,21 @@ pub struct BrowserMetadata {
 }
 
 impl BrowserMetadata {
-    pub fn len(&self) -> u64 { self.len }
-    pub fn is_file(&self) -> bool { self.is_file }
-    pub fn is_dir(&self) -> bool { !self.is_file }
-    pub fn created_ms(&self) -> u64 { self.created }
-    pub fn modified_ms(&self) -> u64 { self.modified }
+    pub fn len(&self) -> u64 {
+        self.len
+    }
+    pub fn is_file(&self) -> bool {
+        self.is_file
+    }
+    pub fn is_dir(&self) -> bool {
+        !self.is_file
+    }
+    pub fn created_ms(&self) -> u64 {
+        self.created
+    }
+    pub fn modified_ms(&self) -> u64 {
+        self.modified
+    }
 }
 
 pub fn read<P: AsRef<Path>>(path: P) -> io::Result<Vec<u8>> {
@@ -71,7 +81,10 @@ pub fn read<P: AsRef<Path>>(path: P) -> io::Result<Vec<u8>> {
         .ok_or_else(|| io::Error::new(ErrorKind::NotFound, "File not found"))?;
 
     base64::decode(&value).map_err(|e| {
-        io::Error::new(ErrorKind::InvalidData, format!("Base64 decode error: {}", e))
+        io::Error::new(
+            ErrorKind::InvalidData,
+            format!("Base64 decode error: {}", e),
+        )
     })
 }
 
@@ -143,8 +156,12 @@ pub fn metadata<P: AsRef<Path>>(path: P) -> io::Result<BrowserMetadata> {
         .map_err(|_| io::Error::new(ErrorKind::Other, "Failed to read metadata"))?
         .ok_or_else(|| io::Error::new(ErrorKind::NotFound, "Metadata not found"))?;
 
-    let stored: StoredMeta = serde_json::from_str(&meta_json)
-        .map_err(|e| io::Error::new(ErrorKind::InvalidData, format!("Meta deserialize error: {}", e)))?;
+    let stored: StoredMeta = serde_json::from_str(&meta_json).map_err(|e| {
+        io::Error::new(
+            ErrorKind::InvalidData,
+            format!("Meta deserialize error: {}", e),
+        )
+    })?;
 
     Ok(BrowserMetadata {
         len: stored.len,
@@ -172,8 +189,8 @@ pub fn read_dir<P: AsRef<Path>>(path: P) -> io::Result<Vec<String>> {
         if let Ok(Some(key)) = storage.key(i) {
             if key.starts_with(&prefix_with_slash) {
                 let remainder = &key[prefix_with_slash.len()..];
-                if !remainder.contains('/') 
-                    && !remainder.ends_with("__dir__") 
+                if !remainder.contains('/')
+                    && !remainder.ends_with("__dir__")
                     && !remainder.ends_with(".fsmeta")
                 {
                     entries.push(remainder.to_string());

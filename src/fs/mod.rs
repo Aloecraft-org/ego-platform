@@ -5,7 +5,7 @@ use std::path::Path;
 mod browser_fs;
 
 pub mod metadata;
-pub use metadata::{metadata, Metadata};
+pub use metadata::{Metadata, metadata};
 
 // === Native and WASI implementation ===
 
@@ -60,7 +60,9 @@ pub fn read_dir<P: AsRef<Path>>(path: P) -> io::Result<std::fs::ReadDir> {
 /// Returns filenames (not full paths) of direct children. Empty vec on error.
 pub fn read_dir_names<P: AsRef<Path>>(path: P) -> Vec<String> {
     #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
-    { browser_fs::read_dir(path).unwrap_or_default() }
+    {
+        browser_fs::read_dir(path).unwrap_or_default()
+    }
 
     #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
     {
@@ -76,7 +78,7 @@ pub fn read_dir_names<P: AsRef<Path>>(path: P) -> Vec<String> {
 
 // === Browser re-exports ===
 #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
-pub use browser_fs::{read, write, create_dir_all, remove_file, exists, read_dir};
+pub use browser_fs::{create_dir_all, exists, read, read_dir, remove_file, write};
 
 // === Native re-exports ===
 #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]

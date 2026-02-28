@@ -9,11 +9,21 @@ pub struct Metadata {
 }
 
 impl Metadata {
-    pub fn len(&self) -> u64 { self.len }
-    pub fn is_file(&self) -> bool { self.is_file }
-    pub fn is_dir(&self) -> bool { !self.is_file }
-    pub fn created_ms(&self) -> Option<u64> { self.created_ms }
-    pub fn modified_ms(&self) -> Option<u64> { self.modified_ms }
+    pub fn len(&self) -> u64 {
+        self.len
+    }
+    pub fn is_file(&self) -> bool {
+        self.is_file
+    }
+    pub fn is_dir(&self) -> bool {
+        !self.is_file
+    }
+    pub fn created_ms(&self) -> Option<u64> {
+        self.created_ms
+    }
+    pub fn modified_ms(&self) -> Option<u64> {
+        self.modified_ms
+    }
 }
 
 #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
@@ -34,10 +44,14 @@ impl From<std::fs::Metadata> for Metadata {
         Metadata {
             len: m.len(),
             is_file: m.is_file(),
-            created_ms: m.created().ok()
+            created_ms: m
+                .created()
+                .ok()
                 .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
                 .map(|d| d.as_millis() as u64),
-            modified_ms: m.modified().ok()
+            modified_ms: m
+                .modified()
+                .ok()
                 .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
                 .map(|d| d.as_millis() as u64),
         }
@@ -46,8 +60,12 @@ impl From<std::fs::Metadata> for Metadata {
 
 pub fn metadata<P: AsRef<Path>>(path: P) -> io::Result<Metadata> {
     #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
-    { super::browser_fs::metadata(path).map(Into::into) }
+    {
+        super::browser_fs::metadata(path).map(Into::into)
+    }
 
     #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
-    { std::fs::metadata(path).map(Into::into) }
+    {
+        std::fs::metadata(path).map(Into::into)
+    }
 }

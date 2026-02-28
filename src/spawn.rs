@@ -1,9 +1,9 @@
 //! Platform-specific task spawning.
 
 use std::future::Future;
-use tokio::sync::oneshot;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
+use tokio::sync::oneshot;
 
 use std::pin::Pin;
 use std::task::{Context, Poll};
@@ -61,7 +61,6 @@ where
     });
     TaskHandle { rx, inner, is_done }
 }
-
 
 pub struct TaskHandle<T> {
     rx: oneshot::Receiver<T>,

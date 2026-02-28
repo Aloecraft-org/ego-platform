@@ -1,10 +1,10 @@
 // aloeplatform/tests/spawn_tests.rs
 
 mod common;
-use common::{test, async_test};
+use common::{async_test, test};
 
-use aloeplatform::time::{sleep, Interval, SystemTime, UNIX_EPOCH, Instant};
 use aloeplatform::spawn::*;
+use aloeplatform::time::{Instant, Interval, SystemTime, UNIX_EPOCH, sleep};
 
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};

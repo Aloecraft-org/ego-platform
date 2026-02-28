@@ -6,13 +6,16 @@ fn main() {
         .unwrap()
         .block_on(async {
             use tokio::io::AsyncReadExt;
-            
+
             let mut buf = String::new();
             println!("Reading stdin...");
-            
+
             // This blocks until EOF or data is received
-            aloeplatform::stdin().read_to_string(&mut buf).await.unwrap();
-            
+            aloeplatform::stdin()
+                .read_to_string(&mut buf)
+                .await
+                .unwrap();
+
             assert_eq!(buf, "hello");
         });
 }

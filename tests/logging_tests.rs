@@ -1,7 +1,7 @@
 // aloeplatform/tests/logging_tests.rs
 
 mod common;
-use common::{test, async_test};
+use common::{async_test, test};
 
 use aloeplatform::logging::*;
 

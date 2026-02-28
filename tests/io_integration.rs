@@ -1,10 +1,10 @@
 // --- Native Tests (Threaded) ---
 #[cfg(not(target_arch = "wasm32"))]
 mod native_tests {
-    use tokio::io::{AsyncRead, AsyncReadExt, ReadBuf};
     use std::pin::Pin;
     use std::task::{Context, Poll};
     use std::time::Duration;
+    use tokio::io::{AsyncRead, AsyncReadExt, ReadBuf};
 
     struct MockStdinBridge {
         receiver: tokio::sync::mpsc::Receiver<std::io::Result<Vec<u8>>>,
@@ -14,7 +14,7 @@ mod native_tests {
     impl MockStdinBridge {
         fn new(data_chunks: Vec<Vec<u8>>) -> Self {
             let (tx, rx) = tokio::sync::mpsc::channel(32);
-            
+
             // This is safe here because this module is guarded by cfg(not(wasm32))
             tokio::task::spawn_blocking(move || {
                 for chunk in data_chunks {
@@ -84,6 +84,6 @@ mod wasm_tests {
         // We just verify we can create the handle without crashing.
         // We cannot test actual reading without external piping.
         let _stdin = aloeplatform::stdin();
-        assert!(true); 
+        assert!(true);
     }
 }

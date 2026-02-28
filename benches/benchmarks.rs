@@ -3,8 +3,8 @@
 // Run with: cargo bench
 
 mod common;
-use common::{test, async_test};
-use aloeplatform::{sleep, spawn, Interval, Instant};
+use aloeplatform::{Instant, Interval, sleep, spawn};
+use common::{async_test, test};
 use std::time::Duration;
 
 #[async_test]
@@ -83,9 +83,7 @@ async fn bench_interval_accuracy() {
 
     let elapsed = start.elapsed();
     let expected = interval_duration * num_ticks;
-    let overhead_per_tick = elapsed
-        .saturating_sub(expected)
-        .as_micros() as f64 / num_ticks as f64;
+    let overhead_per_tick = elapsed.saturating_sub(expected).as_micros() as f64 / num_ticks as f64;
 
     println!(
         "Interval: {} ticks of {:?}, expected: {:?}, actual: {:?}, overhead/tick: {:.2}µs",

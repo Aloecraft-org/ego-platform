@@ -16,7 +16,7 @@ use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
 
 // --- Public Interface ---
 
-pub use impl_platform::{stdin, stdout, Stdin, Stdout};
+pub use impl_platform::{Stdin, Stdout, stdin, stdout};
 
 // --- Native Implementation (Threaded) ---
 // Uses a background thread for blocking stdin reads, communicating via channel.
@@ -119,7 +119,7 @@ mod impl_platform {
 }
 
 // --- WASI P2 Implementation ---
-// 
+//
 // CRITICAL ARCHITECTURE NOTE:
 // ==========================
 // WASI P2 on a single-threaded tokio runtime presents a fundamental challenge:
@@ -148,7 +148,7 @@ mod impl_platform {
     const POLL_TIMEOUT_NS: u64 = 10_000_000; // 10ms
 
     /// Async stdin for WASI P2 that cooperates with the tokio runtime.
-    /// 
+    ///
     /// Uses wasi:io/poll with short timeouts to avoid blocking the runtime.
     pub struct Stdin {
         buffer: Vec<u8>,
@@ -157,9 +157,7 @@ mod impl_platform {
     pub struct Stdout;
 
     pub fn stdin() -> Stdin {
-        Stdin {
-            buffer: Vec::new(),
-        }
+        Stdin { buffer: Vec::new() }
     }
 
     pub fn stdout() -> Stdout {
@@ -182,21 +180,21 @@ mod impl_platform {
 
             // Get stdin stream - note: in WASI P2, get_stdin() returns a fresh handle each time
             let stream = wasi::cli::stdin::get_stdin();
-            
+
             // Get a pollable for the stdin stream
             let stdin_pollable = stream.subscribe();
-            
+
             // Also create a timer pollable for our timeout
             let timer_pollable = wasi::clocks::monotonic_clock::subscribe_duration(POLL_TIMEOUT_NS);
-            
+
             // Poll both: stdin readiness OR timeout
             // This is the key: poll() will return when EITHER is ready,
             // so we won't block forever waiting for stdin.
             let ready_indices = wasi::io::poll::poll(&[&stdin_pollable, &timer_pollable]);
-            
+
             // Check if stdin is ready (index 0)
             let stdin_ready = ready_indices.iter().any(|&i| i == 0);
-            
+
             if stdin_ready {
                 // Stdin has data! Read it non-blocking.
                 // WASI streams return whatever is available (may be less than requested).
@@ -214,12 +212,10 @@ mod impl_platform {
                         // Stream closed = EOF
                         Poll::Ready(Ok(()))
                     }
-                    Err(_e) => {
-                        Poll::Ready(Err(std::io::Error::new(
-                            std::io::ErrorKind::Other,
-                            "WASI stream read error",
-                        )))
-                    }
+                    Err(_e) => Poll::Ready(Err(std::io::Error::new(
+                        std::io::ErrorKind::Other,
+                        "WASI stream read error",
+                    ))),
                 }
             } else {
                 // Timeout fired, stdin not ready.
@@ -238,7 +234,7 @@ mod impl_platform {
         ) -> Poll<Result<usize>> {
             // Get stdout stream
             let stream = wasi::cli::stdout::get_stdout();
-            
+
             // Check how much we can write without blocking
             match stream.check_write() {
                 Ok(0) => {
@@ -265,19 +261,17 @@ mod impl_platform {
 
         fn poll_flush(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Result<()>> {
             let stream = wasi::cli::stdout::get_stdout();
-            
+
             // flush() is non-blocking, just requests a flush.
             // blocking_flush() will wait for it to complete.
             match stream.flush() {
-                Ok(()) => {
-                    match stream.blocking_flush() {
-                        Ok(()) => Poll::Ready(Ok(())),
-                        Err(_) => Poll::Ready(Err(std::io::Error::new(
-                            std::io::ErrorKind::Other,
-                            "WASI stream flush error",
-                        ))),
-                    }
-                }
+                Ok(()) => match stream.blocking_flush() {
+                    Ok(()) => Poll::Ready(Ok(())),
+                    Err(_) => Poll::Ready(Err(std::io::Error::new(
+                        std::io::ErrorKind::Other,
+                        "WASI stream flush error",
+                    ))),
+                },
                 Err(_) => Poll::Ready(Err(std::io::Error::new(
                     std::io::ErrorKind::Other,
                     "WASI stream flush error",

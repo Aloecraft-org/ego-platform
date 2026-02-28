@@ -18,17 +18,17 @@
 //! }
 //! ```
 
+pub mod fs;
+pub mod io;
 pub mod logging;
 pub mod spawn;
 pub mod sync;
 pub mod time;
-pub mod io;
-pub mod fs;
 
-pub use spawn::{spawn, TaskHandle};
-pub use time::{sleep, Interval, SystemTime, UNIX_EPOCH, Instant};
 pub use io::stdin;
+pub use spawn::{TaskHandle, spawn};
 pub use sync::broadcast;
+pub use time::{Instant, Interval, SystemTime, UNIX_EPOCH, sleep};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Platform {
@@ -48,7 +48,6 @@ pub fn detect() -> Platform {
     return Platform::Native;
 }
 
-
 pub use logging::register_output_hook;
 pub fn init() {
     println!("[aloeplatform lib.rs] init");
@@ -65,7 +64,7 @@ mod tests {
     #[test]
     fn test_platform_detection() {
         let platform = detect();
-        
+
         #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
         assert_eq!(platform, Platform::Browser);
 
@@ -88,11 +87,11 @@ mod tests {
         let p1 = detect();
         let p2 = detect();
         assert_eq!(p1, p2);
-        
+
         assert_eq!(Platform::Native, Platform::Native);
         assert_eq!(Platform::Wasi, Platform::Wasi);
         assert_eq!(Platform::Browser, Platform::Browser);
-        
+
         assert_ne!(Platform::Native, Platform::Wasi);
         assert_ne!(Platform::Native, Platform::Browser);
         assert_ne!(Platform::Wasi, Platform::Browser);
