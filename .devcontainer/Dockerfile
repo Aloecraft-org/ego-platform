@@ -60,7 +60,7 @@ COPY --from=dc-rust-tools /usr/local/cargo/bin/cargo-upgrade /usr/local/bin/
 COPY --from=dc-rust-tools /usr/local/cargo/bin/cargo-set-version /usr/local/bin/
 COPY --from=dc-rust-tools /usr/local/cargo/bin/jyt /usr/local/bin/
 
-RUN apt install -y wget curl
+RUN apt-get update && apt-get install -y --no-install-recommends wget curl
 RUN curl https://wasmtime.dev/install.sh -sSf | WASMTIME_HOME=/usr/local bash
 RUN wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/local/bin/yq &&\
     chmod +x /usr/local/bin/yq
