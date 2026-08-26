@@ -1,9 +1,6 @@
 use ego_platform::{Interval, Platform, detect, init, sleep, spawn};
 use std::time::Duration;
 
-#[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
-use wasm_bindgen::prelude::*;
-
 #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
 #[cfg_attr(not(target_arch = "wasm32"), tokio::main(flavor = "multi_thread"))]
 #[cfg_attr(target_arch = "wasm32", tokio::main(flavor = "current_thread"))]

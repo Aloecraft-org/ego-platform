@@ -1,23 +1,19 @@
-#[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
-use wasm_bindgen_test::wasm_bindgen_test;
+//! Integration tests: verify the library works correctly when used as a
+//! dependency.
 
 #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
 wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
 
-#[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
-use tokio::test as async_test;
-
+// In the browser, plain `#[test]` functions run under wasm-bindgen-test.
 #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
-use wasm_bindgen_test as async_test;
+use wasm_bindgen_test::wasm_bindgen_test as test;
 
-#[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
-use wasm_bindgen_test as test;
-
-// Integration tests for ego_platform
-//
-// These tests verify the library works correctly when used as a dependency
-use ego_platform::{Interval, Platform, detect, init, sleep, spawn};
+use ego_platform::{Platform, detect, init, sleep, spawn};
 use std::time::Duration;
+
+// Only the native/WASI tests below exercise Interval.
+#[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
+use ego_platform::Interval;
 
 #[test]
 fn test_integration_platform_detection() {
@@ -127,7 +123,7 @@ async fn test_integration_complex_workflow() {
 async fn test_integration_browser_sleep() {
     init();
 
-    let start = instant::Instant::now();
+    let start = ego_platform::Instant::now();
     sleep(Duration::from_millis(50)).await;
     let elapsed = start.elapsed();
 

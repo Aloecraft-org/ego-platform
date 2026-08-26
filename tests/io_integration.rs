@@ -76,14 +76,13 @@ mod native_tests {
     }
 }
 
-// --- WASM Tests (Single Threaded) ---
-#[cfg(target_arch = "wasm32")]
-mod wasm_tests {
+// --- WASI Tests (Single Threaded) ---
+#[cfg(all(target_arch = "wasm32", target_env = "p2"))]
+mod wasi_tests {
     #[tokio::test]
     async fn test_wasi_stdin_sanity() {
         // We just verify we can create the handle without crashing.
         // We cannot test actual reading without external piping.
         let _stdin = ego_platform::stdin();
-        assert!(true);
     }
 }

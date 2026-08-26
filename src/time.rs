@@ -5,37 +5,25 @@ use std::time::Duration;
 // --- SystemTime ---
 
 #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
-mod system_time {
-    pub use instant::SystemTime;
-    pub const UNIX_EPOCH: SystemTime = SystemTime::UNIX_EPOCH;
-}
+pub use web_time::{Instant, SystemTime, UNIX_EPOCH};
 
 #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
-mod system_time {
-    pub use std::time::{SystemTime, UNIX_EPOCH};
-}
+pub use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
-pub use system_time::*;
-
-#[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
-pub use instant::Instant;
-
-#[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
-pub use std::time::Instant;
-
-/// Asynchronously  for the specified duration.
+/// Asynchronously sleep for the specified duration.
 ///
-/// Uses the appropriate  implementation for the current platform:
-/// - **Native/WASI**: `tokio::time::`
-/// - **Browser**: `gloo_timers::future::`
+/// Uses the appropriate timer implementation for the current platform:
+/// - **Native/WASI**: `tokio::time::sleep`
+/// - **Browser**: `gloo_timers::future::sleep`
 ///
 /// # Examples
 ///
 /// ```no_run
 /// use std::time::Duration;
+/// use ego_platform::sleep;
 ///
 /// # async {
-/// (Duration::from_secs(1));
+/// sleep(Duration::from_secs(1)).await;
 /// # };
 /// ```
 pub async fn sleep(duration: Duration) {
@@ -99,15 +87,9 @@ pub struct Interval {
 #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
 struct BrowserIntervalState {
     duration: Duration,
-    next_tick: Option<instant::Instant>, // None = Not started yet
+    next_tick: Option<Instant>, // None = Not started yet
     behavior: MissedTickBehavior,
 }
-
-// SAFETY: On Native, we wrap tokio::time::Interval which is thread-safe.
-// On Browser, we use a Duration which is a primitive. We manually implement
-// Send to satisfy the Service harness's global requirements.
-unsafe impl Send for Interval {}
-unsafe impl Sync for Interval {}
 
 impl Interval {
     /// Create a new interval with the specified duration.
@@ -158,7 +140,7 @@ impl Interval {
 
         #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
         {
-            let now = instant::Instant::now();
+            let now = Instant::now();
 
             // 1. Initialize logic (First tick fires immediately)
             let next_tick = match self.state.next_tick {
@@ -191,7 +173,7 @@ impl Interval {
                         // Delay mode: Wait full duration starting NOW.
                         // This introduces drift.
                         sleep(self.state.duration).await;
-                        self.state.next_tick = Some(instant::Instant::now() + self.state.duration);
+                        self.state.next_tick = Some(Instant::now() + self.state.duration);
                     }
                 }
             }

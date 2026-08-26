@@ -2,7 +2,9 @@
 /target/
 **/*.rs.bk
 *.pdb
-Cargo.lock
+
+# Local test data (created by `make _init`, removed by `make clean`)
+/.data/
 
 # IDE
 .vscode/
@@ -26,8 +28,10 @@ Thumbs.db
 # Environment
 .env
 dist
+
+# xtrshow / xtrpatch scratch files (see devcontainer aliases)
 .xtrshow
 .xtrpatch
+.xtrshow_manifest
 x.md
 x.patch
-.xtrshow_manifest

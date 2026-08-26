@@ -36,12 +36,17 @@ $(eval $(call cargo_targets,test))
 fmt:
 	cargo fmt
 
+fmt_check:
+	cargo fmt --all -- --check
+
 clippy:
 	cargo clippy --all-targets --all-features -- -D warnings
+	cargo clippy --all-targets $(TARGET_WASI) -- -D warnings
+	cargo clippy --all-targets $(TARGET_BROWSER) -- -D warnings
 
 doc:
 	cargo doc --no-deps --open
 
 all: check test build
 
-ci: fmt clippy check test
+ci: fmt_check clippy check test

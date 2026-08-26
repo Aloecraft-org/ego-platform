@@ -1,7 +1,5 @@
-// ego_platform/tests/logging_tests.rs
-
 mod common;
-use common::{async_test, test};
+use common::test;
 
 use ego_platform::logging::*;
 

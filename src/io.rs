@@ -193,7 +193,7 @@ mod impl_platform {
             let ready_indices = wasi::io::poll::poll(&[&stdin_pollable, &timer_pollable]);
 
             // Check if stdin is ready (index 0)
-            let stdin_ready = ready_indices.iter().any(|&i| i == 0);
+            let stdin_ready = ready_indices.contains(&0);
 
             if stdin_ready {
                 // Stdin has data! Read it non-blocking.
@@ -212,10 +212,7 @@ mod impl_platform {
                         // Stream closed = EOF
                         Poll::Ready(Ok(()))
                     }
-                    Err(_e) => Poll::Ready(Err(std::io::Error::new(
-                        std::io::ErrorKind::Other,
-                        "WASI stream read error",
-                    ))),
+                    Err(_e) => Poll::Ready(Err(std::io::Error::other("WASI stream read error"))),
                 }
             } else {
                 // Timeout fired, stdin not ready.
@@ -246,16 +243,12 @@ mod impl_platform {
                     let to_write = std::cmp::min(n as usize, buf.len());
                     match stream.write(&buf[..to_write]) {
                         Ok(()) => Poll::Ready(Ok(to_write)),
-                        Err(_) => Poll::Ready(Err(std::io::Error::new(
-                            std::io::ErrorKind::Other,
-                            "WASI stream write error",
-                        ))),
+                        Err(_) => {
+                            Poll::Ready(Err(std::io::Error::other("WASI stream write error")))
+                        }
                     }
                 }
-                Err(_) => Poll::Ready(Err(std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    "WASI stream check_write error",
-                ))),
+                Err(_) => Poll::Ready(Err(std::io::Error::other("WASI stream check_write error"))),
             }
         }
 
@@ -267,15 +260,9 @@ mod impl_platform {
             match stream.flush() {
                 Ok(()) => match stream.blocking_flush() {
                     Ok(()) => Poll::Ready(Ok(())),
-                    Err(_) => Poll::Ready(Err(std::io::Error::new(
-                        std::io::ErrorKind::Other,
-                        "WASI stream flush error",
-                    ))),
+                    Err(_) => Poll::Ready(Err(std::io::Error::other("WASI stream flush error"))),
                 },
-                Err(_) => Poll::Ready(Err(std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    "WASI stream flush error",
-                ))),
+                Err(_) => Poll::Ready(Err(std::io::Error::other("WASI stream flush error"))),
             }
         }
 

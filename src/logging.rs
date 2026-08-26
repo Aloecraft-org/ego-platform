@@ -6,7 +6,6 @@ use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 pub static LAST_OUTPUT_TIME: AtomicU64 = AtomicU64::new(0);
 
 // Global hook for custom output behavior (e.g. shell prompt rewriting)
-// We use a static RwLock to allow safe concurrent access and modification.
 type LogHook = Box<dyn Fn(&log::Record) + Sync + Send>;
 static OUTPUT_HOOK: RwLock<Option<LogHook>> = RwLock::new(None);
 
@@ -20,10 +19,9 @@ where
 }
 
 pub fn notify_output() {
-    // use std::time::{SystemTime, UNIX_EPOCH};
     let now = crate::SystemTime::now()
-        .duration_since(crate::SystemTime::UNIX_EPOCH)
-        .unwrap()
+        .duration_since(crate::UNIX_EPOCH)
+        .unwrap_or_default()
         .as_millis() as u64;
     LAST_OUTPUT_TIME.store(now, Ordering::Relaxed);
 }
@@ -42,10 +40,10 @@ struct SimpleLogger;
 impl log::Log for SimpleLogger {
     fn enabled(&self, metadata: &log::Metadata) -> bool {
         // Delegate enabled check to backend if present
-        if let Ok(guard) = BACKEND_LOGGER.read() {
-            if let Some(logger) = guard.as_ref() {
-                return logger.enabled(metadata);
-            }
+        if let Ok(guard) = BACKEND_LOGGER.read()
+            && let Some(logger) = guard.as_ref()
+        {
+            return logger.enabled(metadata);
         }
         metadata.level() <= log::Level::Info
     }
@@ -67,19 +65,19 @@ impl log::Log for SimpleLogger {
 
         // 3. Dispatch to Hook (if present)
         // Hooks take precedence over backend output for shell integration
-        if let Ok(guard) = OUTPUT_HOOK.read() {
-            if let Some(hook) = guard.as_ref() {
-                hook(record);
-                return;
-            }
+        if let Ok(guard) = OUTPUT_HOOK.read()
+            && let Some(hook) = guard.as_ref()
+        {
+            hook(record);
+            return;
         }
 
         // 4. Default Fallback (Delegate to Backend)
-        if let Ok(guard) = BACKEND_LOGGER.read() {
-            if let Some(logger) = guard.as_ref() {
-                logger.log(record);
-                return;
-            }
+        if let Ok(guard) = BACKEND_LOGGER.read()
+            && let Some(logger) = guard.as_ref()
+        {
+            logger.log(record);
+            return;
         }
 
         // 5. Ultimate Fallback (if backend missing)
@@ -96,10 +94,10 @@ impl log::Log for SimpleLogger {
     }
 
     fn flush(&self) {
-        if let Ok(guard) = BACKEND_LOGGER.read() {
-            if let Some(logger) = guard.as_ref() {
-                logger.flush();
-            }
+        if let Ok(guard) = BACKEND_LOGGER.read()
+            && let Some(logger) = guard.as_ref()
+        {
+            logger.flush();
         }
     }
 }
@@ -107,27 +105,21 @@ impl log::Log for SimpleLogger {
 static LOGGER: SimpleLogger = SimpleLogger;
 
 /// Initialize logging for the current platform.
+///
+/// Safe to call more than once; only the first call installs the logger.
 pub fn init() {
-    // 1. Configure Platform Backend
-    let mut max_level = log::LevelFilter::Info;
+    // 1. Configure the platform backend and pick the max level.
 
-    // A. Web (console_log)
+    // A. Browser: map log records onto the console.error/warn/info/... methods
+    // so the browser's own level filtering works natively.
     #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
-    {
-        // Use console_log crate to map generic Log calls to console.debug/info/warn
-        // This makes browser filtering work natively.
-        // We initialize it manually (not via init()) to wrap it.
-        // Note: The struct is named `WebConsoleLogger` in newer versions or exposed differently.
-        // If manual instantiation is tricky, we can implement a trivial wrapper that calls web_sys::console.
-        // But let's try the suggestion from the compiler first if available, otherwise fallback.
-
+    let max_level = {
         struct WebLogger;
         impl log::Log for WebLogger {
             fn enabled(&self, _metadata: &log::Metadata) -> bool {
                 true
             }
             fn log(&self, record: &log::Record) {
-                // Map Rust log levels to console methods
                 use wasm_bindgen::JsValue;
                 let msg = format!("{}", record.args());
                 let js_msg = JsValue::from_str(&msg);
@@ -143,27 +135,27 @@ pub fn init() {
             fn flush(&self) {}
         }
 
-        let logger = WebLogger;
-        max_level = log::LevelFilter::Debug; // Let browser filter
         if let Ok(mut guard) = BACKEND_LOGGER.write() {
-            *guard = Some(Box::new(logger));
+            *guard = Some(Box::new(WebLogger));
         }
         console_error_panic_hook::set_once();
-    }
+        log::LevelFilter::Debug // Let the browser console do the filtering
+    };
 
-    // B. Native & WASI (env_logger)
-    // env_logger works on WASI too, reading RUST_LOG from the host environment.
+    // B. Native & WASI: env_logger, which reads RUST_LOG from the host
+    // environment (wasmtime forwards it too).
     #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
-    {
+    let max_level = {
         // Default to INFO if RUST_LOG is not set
         let env = env_logger::Env::default().default_filter_or("info");
         let logger = env_logger::Builder::from_env(env).build();
 
-        max_level = logger.filter();
+        let level = logger.filter();
         if let Ok(mut guard) = BACKEND_LOGGER.write() {
             *guard = Some(Box::new(logger));
         }
-    }
+        level
+    };
 
     // 2. Install SimpleLogger as the global subscriber
     if log::set_logger(&LOGGER).is_ok() {

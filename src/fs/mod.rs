@@ -1,3 +1,4 @@
+#[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
 use std::io;
 use std::path::Path;
 
@@ -17,10 +18,10 @@ pub fn read<P: AsRef<Path>>(path: P) -> io::Result<Vec<u8>> {
 #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
 pub fn write<P: AsRef<Path>, C: AsRef<[u8]>>(path: P, contents: C) -> io::Result<()> {
     let path = path.as_ref();
-    if let Some(parent) = path.parent() {
-        if !parent.as_os_str().is_empty() {
-            create_dir_all(parent)?;
-        }
+    if let Some(parent) = path.parent()
+        && !parent.as_os_str().is_empty()
+    {
+        create_dir_all(parent)?;
     }
     std::fs::write(path, contents)
 }
