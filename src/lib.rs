@@ -3,8 +3,16 @@
 //! This library provides a unified API for common operations across different platforms:
 //! - **Logging**: Platform-appropriate logging initialization
 //! - **Async spawn**: Task spawning with correct bounds for each platform
-//! - **Time**: Sleep, intervals, and system time
-//! - **Sync**: Broadcast channels (native only, stub on WASM)
+//! - **Time**: Sleep, intervals, and system time — plus an injectable
+//!   [`clock::Clock`] for tests and record/replay
+//! - **Sync**: Broadcast channels, on every target including the browser
+//!   (tokio's `sync` primitives are runtime-free and wasm-clean)
+//! - **Entropy**: The platform CSPRNG and a deterministic stand-in, in the
+//!   `rand_core` 0.10 vocabulary ([`entropy`])
+//! - **Pacing**: Cooperative slicing for CPU-bound loops ([`pacer`])
+//! - **Blobs**: Named binary state with atomic writes ([`blobs`])
+//! - **Shutdown**: One awaitable end-of-process signal ([`shutdown`])
+//! - **Env**: Environment variables with honest absence ([`env`])
 //!
 //! # Platform Detection
 //!
@@ -18,17 +26,31 @@
 //! }
 //! ```
 
+pub mod blobs;
+pub mod clock;
+pub mod entropy;
+pub mod env;
 pub mod fs;
 pub mod io;
 pub mod logging;
+pub mod pacer;
+pub mod shutdown;
 pub mod spawn;
 pub mod sync;
 pub mod time;
 
+pub use blobs::{BlobStore, MemStore};
+pub use clock::{Clock, ManualClock, SystemClock};
 pub use io::stdin;
+pub use pacer::{Pacer, yield_now};
 pub use spawn::{TaskHandle, spawn};
 pub use sync::broadcast;
 pub use time::{Instant, Interval, SystemTime, UNIX_EPOCH, sleep, timeout};
+
+#[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
+pub use blobs::DirStore;
+#[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
+pub use blobs::IdbStore;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Platform {

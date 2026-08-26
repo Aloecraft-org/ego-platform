@@ -17,6 +17,12 @@ path = "src/main.rs"
 
 [dependencies]
 log = "0.4"
+# The entropy module speaks the rand_core 0.10 vocabulary so that anything
+# accepting aloecrypt_core's `CryptoRngCore` (Rng + CryptoRng) accepts
+# ego-platform's system rng unchanged. Versions track aloecrypt_core.
+rand_core = "0.10"
+rand_chacha = { version = "0.10", default-features = false }
+getrandom = { version = "0.2.17", default-features = false }
 
 # --- Native only ---
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
@@ -43,7 +49,22 @@ wasm-bindgen-futures = "0.4"
 console_error_panic_hook = "0.1"
 gloo-timers = { version = "0.3", features = ["futures"] }
 web-time = "1.1"
-web-sys = { version = "0.3", features = ["Window", "Storage", "console"] }
+getrandom = { version = "0.2.17", default-features = false, features = ["js"] }
+web-sys = { version = "0.3", features = [
+    "Window",
+    "Storage",
+    "console",
+    # The blob store's IndexedDB backend, and the shutdown module's pagehide
+    # listener ("Event").
+    "Event",
+    "IdbFactory",
+    "IdbOpenDbRequest",
+    "IdbRequest",
+    "IdbDatabase",
+    "IdbObjectStore",
+    "IdbTransaction",
+    "IdbTransactionMode",
+] }
 js-sys = "0.3"
 futures = "0.3"
 base64 = "0.22"
