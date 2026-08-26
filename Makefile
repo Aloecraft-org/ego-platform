@@ -31,12 +31,7 @@ $(eval $(call cargo_targets,build))
 $(eval $(call cargo_targets,check))
 $(eval $(call cargo_targets,test))
 
-check: check_native check_wasi check_browser
-test: test_native test_wasi test_browser
-build: build_native build_wasi build_browser
 
-clean:
-	cargo clean
 
 fmt:
 	cargo fmt

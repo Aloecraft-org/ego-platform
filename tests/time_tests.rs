@@ -1,8 +1,8 @@
 mod common;
 use common::{async_test, test};
 
-use aloeplatform::time::*;
-use aloeplatform::time::{Instant, Interval, SystemTime, UNIX_EPOCH, sleep};
+use ego_platform::time::*;
+use ego_platform::time::{Instant, Interval, SystemTime, UNIX_EPOCH, sleep};
 use std::time::Duration;
 
 #[async_test]
@@ -38,7 +38,7 @@ fn test_system_time() {
 #[test]
 fn test_system_time_ordering() {
     let t1 = Instant::now();
-    aloeplatform::sleep(Duration::from_millis(10));
+    ego_platform::sleep(Duration::from_millis(10));
     let t2 = Instant::now();
     assert!(t2 > t1);
 }
@@ -51,7 +51,7 @@ async fn test_multiple_intervals() {
     let counter = Arc::new(AtomicUsize::new(0));
     let counter_clone = counter.clone();
 
-    aloeplatform::spawn(async move {
+    ego_platform::spawn(async move {
         let mut interval = Interval::new(Duration::from_millis(25));
         for _ in 0..3 {
             interval.tick().await;

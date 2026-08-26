@@ -1,4 +1,4 @@
-use aloeplatform::{Interval, Platform, detect, init, sleep, spawn};
+use ego_platform::{Interval, Platform, detect, init, sleep, spawn};
 use std::time::Duration;
 
 #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]

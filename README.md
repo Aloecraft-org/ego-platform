@@ -1,4 +1,4 @@
-# AloePlatform
+# ego-platform
 
 A cross-platform Rust library providing unified APIs for native, WASI, and browser environments.
 
@@ -24,7 +24,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-aloeplatform = "0.1.0"
+ego-platform = "0.1.0"
 ```
 
 ## Usage
@@ -32,7 +32,7 @@ aloeplatform = "0.1.0"
 ### Basic Example
 
 ```rust
-use aloeplatform::{init, detect, Platform, spawn, sleep};
+use ego_platform::{init, detect, Platform, spawn, sleep};
 use std::time::Duration;
 
 #[tokio::main]
@@ -60,7 +60,7 @@ async fn main() {
 ### Intervals
 
 ```rust
-use aloeplatform::Interval;
+use ego_platform::Interval;
 use std::time::Duration;
 
 let mut interval = Interval::new(Duration::from_millis(100));
@@ -74,7 +74,7 @@ loop {
 ### Broadcast Channels (Native/WASI only)
 
 ```rust
-use aloeplatform::broadcast;
+use ego_platform::broadcast;
 
 let (tx, mut rx) = broadcast::channel::<String>(10);
 
@@ -232,7 +232,7 @@ cargo install wasm-pack
 
 Make sure you call `init()` before logging:
 ```rust
-aloeplatform::init();
+ego_platform::init();
 log::info!("Now logging works!");
 ```
 

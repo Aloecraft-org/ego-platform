@@ -1,9 +1,9 @@
-// aloeplatform/tests/io_tests.rs
+// ego_platform/tests/io_tests.rs
 
 mod common;
 use common::{async_test, test};
 
-use aloeplatform::io::*;
+use ego_platform::io::*;
 
 #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
 use tokio::io::AsyncReadExt;

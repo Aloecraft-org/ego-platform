@@ -16,7 +16,7 @@ use std::task::{Context, Poll};
 /// # Examples
 ///
 /// ```no_run
-/// use aloeplatform::spawn;
+/// use ego_platform::spawn;
 ///
 /// spawn(async {
 ///     println!("Running in background");
@@ -67,8 +67,6 @@ pub struct TaskHandle<T> {
     // On native, we keep the actual JoinHandle to allow forceful aborts
     #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
     inner: tokio::task::JoinHandle<()>,
-
-    // Valid on all platforms
     is_done: Arc<AtomicBool>,
 }
 

@@ -1,9 +1,9 @@
-// aloeplatform/tests/logging_tests.rs
+// ego_platform/tests/logging_tests.rs
 
 mod common;
 use common::{async_test, test};
 
-use aloeplatform::logging::*;
+use ego_platform::logging::*;
 
 #[test]
 fn test_logging_init() {

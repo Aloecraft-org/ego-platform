@@ -83,7 +83,7 @@ mod wasm_tests {
     async fn test_wasi_stdin_sanity() {
         // We just verify we can create the handle without crashing.
         // We cannot test actual reading without external piping.
-        let _stdin = aloeplatform::stdin();
+        let _stdin = ego_platform::stdin();
         assert!(true);
     }
 }

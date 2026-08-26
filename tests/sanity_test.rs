@@ -1,5 +1,5 @@
 mod common;
-use aloeplatform::time::{SystemTime, UNIX_EPOCH, sleep};
+use ego_platform::time::{SystemTime, UNIX_EPOCH, sleep};
 use common::async_test;
 
 #[async_test]

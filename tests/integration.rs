@@ -13,10 +13,10 @@ use wasm_bindgen_test as async_test;
 #[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
 use wasm_bindgen_test as test;
 
-// Integration tests for aloeplatform
+// Integration tests for ego_platform
 //
 // These tests verify the library works correctly when used as a dependency
-use aloeplatform::{Interval, Platform, detect, init, sleep, spawn};
+use ego_platform::{Interval, Platform, detect, init, sleep, spawn};
 use std::time::Duration;
 
 #[test]
@@ -40,7 +40,7 @@ fn test_integration_init() {
 async fn test_integration_sleep() {
     init();
 
-    let start = std::time::Instant::now();
+    let start = ego_platform::Instant::now();
     sleep(Duration::from_millis(50)).await;
     let elapsed = start.elapsed();
 
@@ -62,7 +62,7 @@ async fn test_integration_spawn() {
         flag_clone.store(true, Ordering::SeqCst);
     });
 
-    tokio::time::sleep(Duration::from_millis(50)).await;
+    ego_platform::sleep(Duration::from_millis(50)).await;
     assert!(flag.load(Ordering::SeqCst));
 }
 
@@ -85,7 +85,7 @@ async fn test_integration_interval() {
 #[cfg(not(target_arch = "wasm32"))]
 #[tokio::test]
 async fn test_integration_broadcast() {
-    use aloeplatform::broadcast;
+    use ego_platform::broadcast;
 
     init();
 

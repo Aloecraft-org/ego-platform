@@ -1,9 +1,9 @@
-// Benchmarks for aloeplatform
+// Benchmarks for ego_platform
 //
 // Run with: cargo bench
 
 mod common;
-use aloeplatform::{Instant, Interval, sleep, spawn};
+use ego_platform::{Instant, Interval, sleep, spawn};
 use common::{async_test, test};
 use std::time::Duration;
 
@@ -97,7 +97,7 @@ async fn bench_interval_accuracy() {
 
 #[async_test]
 async fn bench_broadcast_latency() {
-    use aloeplatform::broadcast;
+    use ego_platform::broadcast;
 
     let (tx, mut rx) = broadcast::channel::<u64>(100);
     let num_messages = 100;

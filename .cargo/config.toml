@@ -1,32 +1,19 @@
-# Cargo configuration for cross-platform builds
-[target.wasm32-wasip2]
-runner = [
-    "wasmtime", "run",
-    "-S", "inherit-network",
-    "--dir", "./.data/home::.",
-    "--dir", "./.data/tmp::/tmp",
-    "--env", "TMPDIR=/tmp",
-    "--"
-]
-
 [target.wasm32-unknown-unknown]
 runner = "wasm-bindgen-test-runner"
 # runner = "trunk serve"
 
+[target.wasm32-wasip2]
+# Without a runner cargo tries to exec the .wasm directly and gets EACCES.
+runner = ["wasmtime", "run", "--dir=.", "--"]
 # FIXME: wasip2 is still considered unstable. Get rid of this as soon as there's an upgrade
 rustflags = [
     "-C", "target-feature=+bulk-memory,+mutable-globals",
     "--cfg", "wasi_ext"
 ]
 
-[development]
-target = "wasm32-wasip2"
-
-# Build settings
-[build]
-target = "wasm32-wasip2"
-# Uncomment to set default target
-# target = "wasm32-unknown-unknown"
+# No [build] target on purpose: bare cargo commands build for the host,
+# which is what make *_native and the `ct` / `cr` aliases expect.
+# Wasm targets are selected explicitly with --target (see Makefile).
 
 # Profile optimizations
 [profile.release]
@@ -39,4 +26,3 @@ strip = true
 [profile.dev]
 opt-level = 0
 debug = true
-target = "wasm32-wasip2"

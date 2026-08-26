@@ -11,7 +11,7 @@ fn main() {
             println!("Reading stdin...");
 
             // This blocks until EOF or data is received
-            aloeplatform::stdin()
+            ego_platform::stdin()
                 .read_to_string(&mut buf)
                 .await
                 .unwrap();

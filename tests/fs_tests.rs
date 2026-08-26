@@ -1,9 +1,9 @@
-// aloeplatform/tests/fs_tests.rs
+// ego_platform/tests/fs_tests.rs
 
 mod common;
 use common::{async_test, test};
 
-use aloeplatform::fs::*;
+use ego_platform::fs::*;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 // Counter to ensure unique test paths

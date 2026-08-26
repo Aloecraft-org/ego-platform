@@ -9,7 +9,7 @@
 //! # Platform Detection
 //!
 //! ```
-//! use aloeplatform::{Platform, detect};
+//! use ego_platform::{Platform, detect};
 //!
 //! match detect() {
 //!     Platform::Native => println!("Running on native platform"),
@@ -28,7 +28,7 @@ pub mod time;
 pub use io::stdin;
 pub use spawn::{TaskHandle, spawn};
 pub use sync::broadcast;
-pub use time::{Instant, Interval, SystemTime, UNIX_EPOCH, sleep};
+pub use time::{Instant, Interval, SystemTime, UNIX_EPOCH, sleep, timeout};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Platform {
@@ -50,7 +50,7 @@ pub fn detect() -> Platform {
 
 pub use logging::register_output_hook;
 pub fn init() {
-    println!("[aloeplatform lib.rs] init");
+    println!("[ego_platform lib.rs] init");
     logging::init();
 }
 

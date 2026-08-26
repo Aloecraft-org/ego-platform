@@ -1,14 +1,14 @@
 [package]
-name = "aloeplatform"
-version = "0.1.0"
+name = "ego_platform"
+version = "0.1.2"
 edition = "2024"
 
 [lib]
-name = "aloeplatform"
+name = "ego_platform"
 path = "src/lib.rs"
 
 [[bin]]
-name = "aloeplatform-example"
+name = "ego-platform-example"
 path = "src/main.rs"
 
 [[test]]
@@ -45,7 +45,7 @@ wasi = "0.14"
 
 # # Browser only
 [target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dependencies]
-wasm-bindgen = "0.2"
+wasm-bindgen = "=0.2.114"
 wasm-bindgen-futures = "0.4"
 console_error_panic_hook = "0.1"
 console_log = "1"
