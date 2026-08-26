@@ -1,6 +1,7 @@
 use std::io;
 use std::path::Path;
 
+#[derive(Debug, Clone)]
 pub struct Metadata {
     pub len: u64,
     pub is_file: bool,
@@ -11,6 +12,9 @@ pub struct Metadata {
 impl Metadata {
     pub fn len(&self) -> u64 {
         self.len
+    }
+    pub fn is_empty(&self) -> bool {
+        self.len == 0
     }
     pub fn is_file(&self) -> bool {
         self.is_file

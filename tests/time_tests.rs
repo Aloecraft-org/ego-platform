@@ -1,7 +1,6 @@
 mod common;
 use common::{async_test, test};
 
-use ego_platform::time::*;
 use ego_platform::time::{Instant, Interval, SystemTime, UNIX_EPOCH, sleep};
 use std::time::Duration;
 
@@ -35,10 +34,10 @@ fn test_system_time() {
     assert!(duration.as_secs() > 1_600_000_000);
 }
 
-#[test]
-fn test_system_time_ordering() {
+#[async_test]
+async fn test_instant_ordering() {
     let t1 = Instant::now();
-    ego_platform::sleep(Duration::from_millis(10));
+    sleep(Duration::from_millis(10)).await;
     let t2 = Instant::now();
     assert!(t2 > t1);
 }

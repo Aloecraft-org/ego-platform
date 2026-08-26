@@ -1,10 +1,11 @@
-// Benchmarks for ego_platform
-//
-// Run with: cargo bench
+//! Timing sanity checks for ego_platform.
+//!
+//! These are written as async tests rather than `#[bench]` functions so they
+//! run on every platform. Execute them with `cargo test --benches`.
 
 mod common;
+use common::async_test;
 use ego_platform::{Instant, Interval, sleep, spawn};
-use common::{async_test, test};
 use std::time::Duration;
 
 #[async_test]

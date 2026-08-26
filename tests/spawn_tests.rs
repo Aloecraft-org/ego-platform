@@ -1,10 +1,8 @@
-// ego_platform/tests/spawn_tests.rs
-
 mod common;
-use common::{async_test, test};
+use common::async_test;
 
-use ego_platform::spawn::*;
-use ego_platform::time::{Instant, Interval, SystemTime, UNIX_EPOCH, sleep};
+use ego_platform::spawn::spawn;
+use ego_platform::time::sleep;
 
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};

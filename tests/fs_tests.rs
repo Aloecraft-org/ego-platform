@@ -1,7 +1,5 @@
-// ego_platform/tests/fs_tests.rs
-
 mod common;
-use common::{async_test, test};
+use common::test;
 
 use ego_platform::fs::*;
 use std::sync::atomic::{AtomicU64, Ordering};

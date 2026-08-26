@@ -1,13 +1,17 @@
 # ego-platform
 
+[![CI](https://github.com/aloecraft-org/ego-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/aloecraft-org/ego-platform/actions/workflows/ci.yml)
+
 A cross-platform Rust library providing unified APIs for native, WASI, and browser environments.
 
 ## Features
 
 - **Platform Detection**: Detect runtime environment at compile-time
-- **Logging**: Platform-appropriate logging initialization
-- **Async Spawn**: Task spawning with correct trait bounds per platform
-- **Time Utilities**: Sleep, intervals, and system time
+- **Logging**: Platform-appropriate logging initialization, with an optional output hook
+- **Async Spawn**: Task spawning with correct trait bounds per platform, plus a `TaskHandle` mirroring tokio's `JoinHandle`
+- **Time Utilities**: Sleep, intervals (with missed-tick behavior), timeout, `Instant`/`SystemTime`
+- **IO**: Async stdin/stdout that stays responsive on WASI P2's single-threaded runtime
+- **Filesystem**: `read`/`write`/`metadata`/`read_dir` backed by `std::fs` natively and `localStorage` in the browser
 - **Synchronization**: Broadcast channels (native/WASI only)
 
 ## Supported Platforms
@@ -15,7 +19,7 @@ A cross-platform Rust library providing unified APIs for native, WASI, and brows
 | Platform | Target Triple | Runtime |
 |----------|--------------|---------|
 | Native | `x86_64-unknown-linux-gnu` (etc.) | Tokio |
-| WASI | `wasm32-wasip2` | Tokio (limited) |
+| WASI | `wasm32-wasip2` | Tokio (limited) + wasmtime |
 | Browser | `wasm32-unknown-unknown` | wasm-bindgen-futures |
 
 ## Installation
@@ -24,7 +28,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-ego-platform = "0.1.0"
+ego-platform = "0.1"
 ```
 
 ## Usage
@@ -39,19 +43,19 @@ use std::time::Duration;
 async fn main() {
     // Initialize platform (sets up logging)
     init();
-    
+
     // Detect current platform
     match detect() {
         Platform::Native => println!("Running natively"),
         Platform::Wasi => println!("Running on WASI"),
         Platform::Browser => println!("Running in browser"),
     }
-    
+
     // Spawn background task
     spawn(async {
         println!("Background task");
     });
-    
+
     // Sleep
     sleep(Duration::from_secs(1)).await;
 }
@@ -86,25 +90,23 @@ let msg = rx.recv().await.unwrap();
 
 ### Prerequisites
 
-- Rust 1.70+ (2021 edition or later)
-- For WASI: `rustup target add wasm32-wasip2`
-- For Browser: `rustup target add wasm32-unknown-unknown`
-- For WASI runtime: Install [wasmtime](https://wasmtime.dev/)
+- Rust 1.88+ (the crate uses the 2024 edition)
+- Targets: `rustup target add wasm32-wasip2 wasm32-unknown-unknown`
+- WASI test runtime: [wasmtime](https://wasmtime.dev/) (used as the cargo runner, see `.cargo/config.toml`)
+- Browser tests: `wasm-bindgen-cli` **pinned to the version in `Cargo.lock`** (currently 0.2.114) plus a browser and matching webdriver (e.g. Firefox + geckodriver):
+
+  ```bash
+  cargo install wasm-bindgen-cli --version 0.2.114
+  ```
+
+The devcontainer in `.devcontainer/` has all of this preinstalled.
 
 ### Quick Build
 
 ```bash
-# Check all platforms
-make check
-
-# Run tests on all platforms
-make test
-
-# Build all platforms
-make build
-
-# Run examples
-make run
+make check   # cargo check on all three targets
+make test    # run tests on all three targets
+make build   # build all three targets
 ```
 
 ### Platform-Specific Commands
@@ -113,45 +115,29 @@ make run
 # Native
 cargo build
 cargo test
-cargo run
 
-# WASI
+# WASI (runs under wasmtime via the configured cargo runner)
 cargo build --target wasm32-wasip2
 cargo test --target wasm32-wasip2
-cargo run --target wasm32-wasip2
 
-# Browser
+# Browser (runs under wasm-bindgen-test-runner + headless browser)
 cargo build --target wasm32-unknown-unknown
-wasm-pack test --headless --firefox
+cargo test --target wasm32-unknown-unknown
 ```
 
-## Testing
+Each `make` verb also has per-platform variants: `make test_native`,
+`make test_wasi`, `make test_browser` (same pattern for `build` and `check`).
+Append `quiet` to any invocation to suppress rustc warnings (`make test quiet`).
 
-The library includes comprehensive tests for all platforms:
+## Continuous Integration
 
-```bash
-# Run all tests
-make test
+GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs
+the same steps as the devcontainer workflow on every push and pull request:
 
-# Native tests only
-make test_native
-
-# WASI tests only
-make test_wasm
-
-# Browser tests only (requires wasm-pack)
-make test_web
-```
-
-### Test Coverage
-
-- ✅ Platform detection
-- ✅ Logging initialization
-- ✅ Task spawning
-- ✅ Sleep functionality
-- ✅ Interval timers
-- ✅ System time
-- ✅ Broadcast channels
+- `make fmt_check` and `make clippy` (all three targets, warnings denied)
+- Native build + tests on Linux, macOS, and Windows
+- WASI build + tests under wasmtime
+- Browser build + tests under `wasm-bindgen-test-runner` with a headless browser
 
 ## Architecture
 
@@ -175,10 +161,12 @@ Platform detection happens at compile-time using cfg attributes:
 ```
 src/
 ├── lib.rs          # Public API and platform detection
-├── logging.rs      # Platform-specific logging
-├── spawn.rs        # Task spawning
-├── time.rs         # Sleep, intervals, SystemTime
-└── sync.rs         # Broadcast channels
+├── logging.rs      # Platform-specific logging (+ output hook)
+├── spawn.rs        # Task spawning and TaskHandle
+├── time.rs         # Sleep, Interval, timeout, Instant/SystemTime
+├── io.rs           # Async stdin/stdout
+├── sync.rs         # Broadcast channels
+└── fs/             # Filesystem (std::fs native, localStorage in browser)
 ```
 
 ## API Differences by Platform
@@ -187,46 +175,45 @@ src/
 
 **Native/WASI**: Requires `Send` bound
 ```rust
-pub fn spawn<F>(future: F)
-where F: Future<Output = ()> + Send + 'static
+pub fn spawn<F, T>(future: F) -> TaskHandle<T>
+where F: Future<Output = T> + Send + 'static
 ```
 
 **Browser**: No `Send` bound required
 ```rust
-pub fn spawn<F>(future: F)
-where F: Future<Output = ()> + 'static
+pub fn spawn<F, T>(future: F) -> TaskHandle<T>
+where F: Future<Output = T> + 'static
 ```
 
 ### Broadcast Channels
 
-**Native/WASI**: Full tokio::sync::broadcast implementation
+**Native/WASI**: Full `tokio::sync::broadcast` implementation
 
-**Browser**: Stub implementation (returns immediately, no actual broadcasting)
+**Browser**: Not available
 
-## Performance Notes
+### Stdin/Stdout
 
-- **Native**: Full tokio runtime with work-stealing scheduler
-- **WASI**: Tokio runtime with limited I/O (no network, limited filesystem)
-- **Browser**: Single-threaded event loop via wasm-bindgen
+- **Native**: Background thread bridges blocking reads into the async runtime
+- **WASI P2**: `wasi:io/poll`-based polling keeps the single-threaded runtime responsive
+- **Browser**: Stubs (stdin is always EOF; stdout reports success)
 
 ## Troubleshooting
 
-### WASI Build Issues
-
-If you see errors about unstable features:
-
-```toml
-# Add to .cargo/config.toml
-[target.wasm32-wasip2.rustflags]
-rustflags = ["--cfg", "wasi_ext"]
-```
-
 ### Browser Tests Not Running
 
-Install wasm-pack:
+`cargo test --target wasm32-unknown-unknown` uses `wasm-bindgen-test-runner`
+(see `.cargo/config.toml`). The runner's version must match the `wasm-bindgen`
+version in `Cargo.lock` exactly, and a browser + webdriver (e.g. Firefox +
+geckodriver) must be on `PATH`:
+
 ```bash
-cargo install wasm-pack
+cargo install wasm-bindgen-cli --version 0.2.114
 ```
+
+### WASI Tests Failing to Execute
+
+The `.wasm` binaries are run through wasmtime (configured as the cargo
+runner). Make sure `wasmtime` is installed and on `PATH`.
 
 ### Logging Not Working
 
@@ -242,17 +229,11 @@ Contributions are welcome! Please ensure:
 
 1. All tests pass: `make test`
 2. Code is formatted: `make fmt`
-3. No clippy warnings: `make clippy`
+3. No clippy warnings on any target: `make clippy`
 4. Tests added for new features
+
+`make ci` runs the same sequence as GitHub Actions.
 
 ## License
 
 Apache-2.0
-
-## Changelog
-
-### 0.1.0 (2024-02-03)
-- Initial release
-- Platform detection for Native, WASI, and Browser
-- Cross-platform logging, spawning, time, and sync primitives
-- Comprehensive test suite

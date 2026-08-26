@@ -49,12 +49,13 @@ pub fn detect() -> Platform {
 }
 
 pub use logging::register_output_hook;
+
+/// Initialize the platform layer (currently: logging). Idempotent.
 pub fn init() {
-    println!("[ego_platform lib.rs] init");
     logging::init();
 }
 
-// Backward compatibility alias
+/// Backward-compatibility alias for [`time::sleep`].
 pub use time::sleep as wait_for_timeout;
 
 #[cfg(test)]
@@ -79,7 +80,7 @@ mod tests {
     fn test_platform_debug() {
         let platform = detect();
         let debug_str = format!("{:?}", platform);
-        assert!(debug_str.len() > 0);
+        assert!(!debug_str.is_empty());
     }
 
     #[test]

@@ -1,6 +1,6 @@
 mod common;
-use ego_platform::time::{SystemTime, UNIX_EPOCH, sleep};
 use common::async_test;
+use ego_platform::time::{SystemTime, UNIX_EPOCH, sleep};
 
 #[async_test]
 async fn sanity_test() {
@@ -30,5 +30,4 @@ async fn sanity_test() {
     );
     sleep(std::time::Duration::from_secs(1)).await;
     println!("done!");
-    assert!(true);
 }
