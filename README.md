@@ -93,10 +93,10 @@ let msg = rx.recv().await.unwrap();
 - Rust 1.88+ (the crate uses the 2024 edition)
 - Targets: `rustup target add wasm32-wasip2 wasm32-unknown-unknown`
 - WASI test runtime: [wasmtime](https://wasmtime.dev/) (used as the cargo runner, see `.cargo/config.toml`)
-- Browser tests: `wasm-bindgen-cli` **pinned to the version in `Cargo.lock`** (currently 0.2.114) plus a browser and matching webdriver (e.g. Firefox + geckodriver):
+- Browser tests: `wasm-bindgen-cli` **pinned to the version in `Cargo.lock`** (currently 0.2.127) plus a browser and matching webdriver (e.g. Firefox + geckodriver):
 
   ```bash
-  cargo install wasm-bindgen-cli --version 0.2.114
+  cargo install wasm-bindgen-cli --version 0.2.127
   ```
 
 The devcontainer in `.devcontainer/` has all of this preinstalled.
@@ -207,7 +207,7 @@ version in `Cargo.lock` exactly, and a browser + webdriver (e.g. Firefox +
 geckodriver) must be on `PATH`:
 
 ```bash
-cargo install wasm-bindgen-cli --version 0.2.114
+cargo install wasm-bindgen-cli --version 0.2.127
 ```
 
 ### WASI Tests Failing to Execute
